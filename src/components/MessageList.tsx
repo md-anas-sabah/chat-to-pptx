@@ -31,17 +31,20 @@ export default function MessageList({
       )}
 
       {messages.map((message, index) => (
-        <div key={index} className="mb-6">
+        <div key={index} className="mb-4">
           {message.role === "assistant" && message.type === "thinking" && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-              <div className="text-purple-600 font-semibold mb-2">
-                Thinking...
+            <div className="bg-purple-50 border-l-4 border-purple-500 rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                <div className="text-purple-700 font-semibold">
+                  Thinking...
+                </div>
               </div>
               <div className="text-gray-900 font-medium mb-2">
                 {message.content}
               </div>
               {message.actionDetails && (
-                <div className="text-gray-700 text-sm leading-relaxed">
+                <div className="text-gray-700 text-sm leading-relaxed mt-2 pl-4 border-l-2 border-purple-200">
                   {message.actionDetails}
                 </div>
               )}
@@ -49,11 +52,17 @@ export default function MessageList({
           )}
 
           {message.role === "assistant" && message.type === "action" && (
-            <div className="mb-4">
-              <div className="text-gray-900 mb-3">{message.content}</div>
+            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <div className="text-blue-700 font-semibold">
+                  Processing...
+                </div>
+              </div>
+              <div className="text-gray-900 font-medium mb-2">{message.content}</div>
               {message.actionDetails && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-start gap-3">
-                  <div className="text-gray-500 mt-1">🔍</div>
+                <div className="bg-white border border-blue-200 rounded-lg p-3 flex items-start gap-3 mt-2">
+                  <div className="text-blue-500 mt-1">🔍</div>
                   <div className="flex-1">
                     <div className="font-medium text-gray-900 text-sm mb-1">
                       {message.actionDetails.split("\n")[0]}
@@ -67,8 +76,22 @@ export default function MessageList({
             </div>
           )}
 
+          {message.role === "assistant" && message.type === "normal" && (
+            <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-green-500">✓</div>
+                <div className="text-green-700 font-semibold">
+                  Completed
+                </div>
+              </div>
+              <div className="text-gray-700">{message.content}</div>
+            </div>
+          )}
+
           {message.role === "assistant" && !message.type && (
-            <div className="text-gray-700">{message.content}</div>
+            <div className="text-gray-700 bg-gray-50 rounded-lg p-3">
+              {message.content}
+            </div>
           )}
         </div>
       ))}
