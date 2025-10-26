@@ -3,15 +3,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  Send,
-  Paperclip,
-  CheckCircle,
-  History,
-  Download,
-  Menu,
-  X,
-} from "lucide-react";
+import { Send, Paperclip, History, Download, Menu, X } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -448,16 +440,11 @@ export default function Home() {
         {slides.length > 0 ? (
           <>
             <div className="flex items-center justify-between p-6 bg-white border-b border-gray-200">
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">
-                  {slides.length} slides generated
-                </span>
-              </div>
+              <div className="flex items-center gap-2 text-green-600"></div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={downloadPDF}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 border-2 border-black text-black rounded-lg hover:bg-gray-50 transition-colors"
                   title="Download as PDF"
                 >
                   <Download className="w-4 h-4" />
@@ -465,7 +452,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={downloadPPT}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 border-2 border-black text-black rounded-lg hover:bg-gray-50 transition-colors"
                   title="Download as PPTX"
                 >
                   <Download className="w-4 h-4" />
@@ -515,21 +502,6 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            </div>
-
-            <div className="p-6 bg-white border-t border-gray-200 space-y-2">
-              <button
-                onClick={downloadPPT}
-                className="w-full bg-black hover:bg-gray-800 text-white font-medium py-3 rounded-lg transition-colors"
-              >
-                Download as PowerPoint
-              </button>
-              <button
-                onClick={downloadPDF}
-                className="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-3 rounded-lg transition-colors"
-              >
-                Download as PDF
-              </button>
             </div>
           </>
         ) : (
