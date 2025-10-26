@@ -488,18 +488,22 @@ export default function Home() {
                       }}
                     >
                       {slide.image && (
-                        <div className="absolute left-8 top-1/2 -translate-y-1/2">
-                          <div className="w-48 h-48 bg-gray-800 rounded-lg" />
+                        <div className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2">
+                          <div className="w-32 h-32 md:w-48 md:h-48 bg-gray-800 rounded-lg" />
                         </div>
                       )}
                       <div
-                        className={slide.image ? "ml-auto mr-8" : "text-center"}
+                        className={
+                          slide.image
+                            ? "ml-auto mr-4 md:mr-8 max-w-[55%] md:max-w-[60%]"
+                            : "text-center max-w-full px-4"
+                        }
                       >
-                        <h2 className="text-4xl font-bold mb-4">
+                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 break-words">
                           {slide.title}
                         </h2>
                         {slide.content && (
-                          <div className="text-lg opacity-90">
+                          <div className="text-sm md:text-base lg:text-lg opacity-90 break-words">
                             {slide.content}
                           </div>
                         )}
