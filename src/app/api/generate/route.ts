@@ -25,7 +25,41 @@ export async function POST(req: NextRequest) {
 They want to edit/update it. Here are the current slides:
 ${JSON.stringify(slides, null, 2)}
 
-Based on their request, provide an updated JSON array of slides.`;
+Based on their request, modify the slides accordingly and return ONLY a valid JSON object with this exact structure:
+
+{
+  "thoughts": [
+    {
+      "role": "assistant",
+      "content": "Understanding your request",
+      "type": "thinking",
+      "actionDetails": "Brief description of what changes you're making to the presentation."
+    },
+    {
+      "role": "assistant",
+      "content": "I'll update the presentation based on your request.",
+      "type": "normal"
+    }
+  ],
+  "slides": [
+    {
+      "title": "Updated Slide Title",
+      "content": "Updated content",
+      "backgroundColor": "#6B7B7F",
+      "image": true
+    }
+  ]
+}
+
+Guidelines:
+1. Keep existing slides that don't need changes
+2. Add new slides if requested
+3. Modify slides based on user's request
+4. Maintain the same JSON structure
+5. Use different background colors for variety (#6B7B7F, #8B9B9F, #5B6B6F, #7B8B8F)
+6. Include thoughts array explaining what you're doing
+
+Return ONLY the JSON object, no additional text.`;
     } else {
       systemPrompt = `You are a presentation assistant that creates engaging PowerPoint presentations.
 Generate a presentation based on the user's topic. Return ONLY a valid JSON object with this exact structure:
@@ -93,9 +127,12 @@ Return ONLY the JSON object, no additional text.`;
     const response = await result.response;
     const text = response.text();
 
+    console.log('Gemini Response:', text);
+
     // Extract JSON from the response
     let jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.log('No JSON found in response');
       // If no JSON found, create a simple response
       return NextResponse.json({
         thoughts: [
@@ -104,13 +141,29 @@ Return ONLY the JSON object, no additional text.`;
             content: text,
             type: 'normal'
           }
-        ]
+        ],
+        slides: slides || [] // Return existing slides if editing
       });
     }
 
-    const jsonResponse = JSON.parse(jsonMatch[0]);
-
-    return NextResponse.json(jsonResponse);
+    try {
+      const jsonResponse = JSON.parse(jsonMatch[0]);
+      console.log('Parsed JSON:', jsonResponse);
+      return NextResponse.json(jsonResponse);
+    } catch (parseError) {
+      console.error('JSON Parse Error:', parseError);
+      console.error('Raw text:', text);
+      return NextResponse.json({
+        thoughts: [
+          {
+            role: 'assistant',
+            content: 'I encountered an error processing your request. Please try rephrasing.',
+            type: 'normal'
+          }
+        ],
+        slides: slides || []
+      });
+    }
   } catch (error) {
     console.error('Error generating presentation:', error);
     return NextResponse.json(

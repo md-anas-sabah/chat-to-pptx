@@ -331,9 +331,9 @@ export default function Home() {
 
       <div className="w-full lg:w-1/2 flex flex-col bg-white border-r border-gray-200">
         <div className="flex justify-end p-4">
-          <div className="bg-black text-white px-3 py-1.5 rounded-md text-sm font-medium">
+          {/* <div className="bg-black text-white px-3 py-1.5 rounded-md text-sm font-medium">
             AI
-          </div>
+          </div> */}
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 pb-4">
@@ -499,11 +499,11 @@ export default function Home() {
                             : "text-center max-w-full px-4"
                         }
                       >
-                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 break-words">
+                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 wrap-break-words">
                           {slide.title}
                         </h2>
                         {slide.content && (
-                          <div className="text-sm md:text-base lg:text-lg opacity-90 break-words">
+                          <div className="text-sm md:text-base lg:text-lg opacity-90 wrap-break-words">
                             {slide.content}
                           </div>
                         )}
