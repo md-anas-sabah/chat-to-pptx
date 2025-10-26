@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState } from 'react';
-import { Send, Paperclip, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Send, Paperclip, CheckCircle, History, Download, Menu, X } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -18,12 +20,77 @@ interface Slide {
   image?: string;
 }
 
+interface ChatHistory {
+  id: string;
+  timestamp: Date;
+  title: string;
+  messages: Message[];
+  slides: Slide[];
+}
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [slides, setSlides] = useState<Slide[]>([]);
   const [username] = useState('piyuindia4');
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+
+  // Load chat history from localStorage on mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('chatHistory');
+    if (savedHistory) {
+      const parsed = JSON.parse(savedHistory);
+      setChatHistory(parsed.map((h: any) => ({
+        ...h,
+        timestamp: new Date(h.timestamp)
+      })));
+    }
+  }, []);
+
+  // Save chat to history
+  const saveToHistory = () => {
+    if (messages.length === 0) return;
+
+    const chatId = currentChatId || Date.now().toString();
+    const userMessage = messages.find(m => m.role === 'user');
+    const title = userMessage?.content.slice(0, 50) || 'Untitled';
+
+    const newChat: ChatHistory = {
+      id: chatId,
+      timestamp: new Date(),
+      title,
+      messages,
+      slides
+    };
+
+    const updatedHistory = chatHistory.filter(h => h.id !== chatId);
+    updatedHistory.unshift(newChat);
+
+    setChatHistory(updatedHistory);
+    setCurrentChatId(chatId);
+    localStorage.setItem('chatHistory', JSON.stringify(updatedHistory));
+  };
+
+  // Load a chat from history
+  const loadChat = (chat: ChatHistory) => {
+    setMessages(chat.messages);
+    setSlides(chat.slides);
+    setCurrentChatId(chat.id);
+    setShowHistory(false);
+  };
+
+  // Start new chat
+  const startNewChat = () => {
+    setMessages([]);
+    setSlides([]);
+    setCurrentChatId(null);
+    setShowHistory(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,15 +99,39 @@ export default function Home() {
     const userMessage = input.trim();
     setInput('');
     setIsLoading(true);
+    setProgress(0);
+    setProgressMessage('Initializing AI...');
 
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
 
     try {
+      // Simulate streaming progress
+      const progressSteps = [
+        { progress: 20, message: 'Analyzing your request...' },
+        { progress: 40, message: 'Researching content...' },
+        { progress: 60, message: 'Generating slides structure...' },
+        { progress: 80, message: 'Creating presentation...' },
+        { progress: 95, message: 'Finalizing...' },
+      ];
+
+      let currentStep = 0;
+      const progressInterval = setInterval(() => {
+        if (currentStep < progressSteps.length) {
+          setProgress(progressSteps[currentStep].progress);
+          setProgressMessage(progressSteps[currentStep].message);
+          currentStep++;
+        }
+      }, 800);
+
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: userMessage, slides }),
       });
+
+      clearInterval(progressInterval);
+      setProgress(100);
+      setProgressMessage('Complete!');
 
       const data = await response.json();
 
@@ -57,14 +148,19 @@ export default function Home() {
         if (data.slides) {
           setSlides(data.slides);
         }
+
+        // Save to history after successful generation
+        setTimeout(saveToHistory, 500);
       }
-    } catch (error) {
+    } catch (error: any) {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: 'An error occurred while processing your request.'
       }]);
     } finally {
       setIsLoading(false);
+      setProgress(0);
+      setProgressMessage('');
     }
   };
 
@@ -73,7 +169,7 @@ export default function Home() {
       const response = await fetch('/api/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slides }),
+        body: JSON.stringify({ slides, format: 'pptx' }),
       });
 
       const blob = await response.blob();
@@ -90,10 +186,93 @@ export default function Home() {
     }
   };
 
+  const downloadPDF = async () => {
+    try {
+      const response = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slides, format: 'pdf' }),
+      });
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'presentation.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* History Sidebar */}
+      <div
+        className={`absolute lg:relative z-20 h-full bg-white border-r border-gray-200 transition-transform duration-300 ${
+          showHistory ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        } ${showHistory ? 'w-80' : 'w-0 lg:w-16'}`}
+      >
+        {showHistory ? (
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="font-semibold text-lg">Chat History</h2>
+              <button
+                onClick={() => setShowHistory(false)}
+                className="lg:hidden p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              <button
+                onClick={startNewChat}
+                className="w-full mb-2 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+              >
+                + New Chat
+              </button>
+              {chatHistory.map((chat) => (
+                <button
+                  key={chat.id}
+                  onClick={() => loadChat(chat)}
+                  className={`w-full text-left p-3 mb-2 rounded-lg hover:bg-gray-50 transition-colors border ${
+                    currentChatId === chat.id ? 'border-black bg-gray-50' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="font-medium text-sm mb-1 truncate">{chat.title}</div>
+                  <div className="text-xs text-gray-500">
+                    {chat.timestamp.toLocaleDateString()} • {chat.slides.length} slides
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="hidden lg:flex flex-col items-center p-2 space-y-4">
+            <button
+              onClick={() => setShowHistory(true)}
+              className="p-3 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Chat History"
+            >
+              <History className="w-6 h-6" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile History Toggle */}
+      <button
+        onClick={() => setShowHistory(true)}
+        className="lg:hidden fixed top-4 left-4 z-10 p-2 bg-white rounded-lg shadow-md border border-gray-200"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+
       {/* Left Sidebar - Chat */}
-      <div className="w-1/2 flex flex-col bg-white border-r border-gray-200">
+      <div className="w-full lg:w-1/2 flex flex-col bg-white border-r border-gray-200">
         {/* AI Badge */}
         <div className="flex justify-end p-4">
           <div className="bg-black text-white px-3 py-1.5 rounded-md text-sm font-medium">
@@ -158,8 +337,18 @@ export default function Home() {
           ))}
 
           {isLoading && (
-            <div className="flex items-center gap-2 text-gray-500">
-              <div className="animate-pulse">Generating...</div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-gray-500">
+                <div className="animate-pulse">Generating...</div>
+              </div>
+              {/* Progress Bar */}
+              <div className="bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-black h-full transition-all duration-500 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="text-sm text-gray-600">{progressMessage}</div>
             </div>
           )}
         </div>
@@ -202,7 +391,7 @@ export default function Home() {
       </div>
 
       {/* Right Panel - Presentation Preview */}
-      <div className="w-1/2 flex flex-col bg-gray-50">
+      <div className="hidden lg:flex w-1/2 flex-col bg-gray-50">
         {slides.length > 0 ? (
           <>
             {/* Header */}
@@ -211,12 +400,24 @@ export default function Home() {
                 <CheckCircle className="w-5 h-5" />
                 <span className="font-medium">{slides.length} slides generated</span>
               </div>
-              <button
-                onClick={downloadPPT}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <span className="text-sm font-medium">Edit Presentation</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={downloadPDF}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  title="Download as PDF"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="text-sm font-medium">PDF</span>
+                </button>
+                <button
+                  onClick={downloadPPT}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  title="Download as PPTX"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="text-sm font-medium">PPTX</span>
+                </button>
+              </div>
             </div>
 
             {/* Slides Preview */}
@@ -228,7 +429,7 @@ export default function Home() {
                     className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
                   >
                     <div
-                      className="w-full aspect-[16/9] flex flex-col items-center justify-center p-8 text-white relative"
+                      className="w-full aspect-video flex flex-col items-center justify-center p-8 text-white relative"
                       style={{
                         backgroundColor: slide.backgroundColor || '#6B7B7F',
                       }}
@@ -257,13 +458,19 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Download Button */}
-            <div className="p-6 bg-white border-t border-gray-200">
+            {/* Download Buttons */}
+            <div className="p-6 bg-white border-t border-gray-200 space-y-2">
               <button
                 onClick={downloadPPT}
                 className="w-full bg-black hover:bg-gray-800 text-white font-medium py-3 rounded-lg transition-colors"
               >
-                Download Presentation
+                Download as PowerPoint
+              </button>
+              <button
+                onClick={downloadPDF}
+                className="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-3 rounded-lg transition-colors"
+              >
+                Download as PDF
               </button>
             </div>
           </>
